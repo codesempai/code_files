@@ -1,0 +1,86 @@
+var sheetName = 'Sheet1';
+var uploadFolderID = '';
+var scriptProp = PropertiesService.getScriptProperties();
+
+function doPost(e) {
+  var lock = LockService.getScriptLock();
+  lock.tryLock(10000);
+
+  try {
+    // Log incoming parameters for debugging
+    Logger.log('Received parameters:');
+    Logger.log('fileName: ' + e.parameter.fileName);
+    Logger.log('mimeType: ' + e.parameter.mimeType);
+
+    var doc = SpreadsheetApp.openById(scriptProp.getProperty("key"));
+    var sheet = doc.getSheetByName(sheetName);
+    var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    var nextRow = sheet.getLastRow() + 1;
+
+    var newRow = headers.map(function(header) {
+      return header === "timestamp" ? new Date() : e.parameter[header];
+    });
+
+    if (e.parameter.media && e.parameter.fileName && e.parameter.mimeType) {
+      // Create blob with explicit mime type and filename
+      var mediaBlob = Utilities.newBlob(
+        Utilities.base64Decode(e.parameter.media),
+        e.parameter.mimeType,
+        e.parameter.fileName
+      );
+
+      // Log blob details
+      Logger.log('Created blob:');
+      Logger.log('Name: ' + mediaBlob.getName());
+      Logger.log('Type: ' + mediaBlob.getContentType());
+
+      // Save file to Drive
+      var folder = DriveApp.getFolderById(uploadFolderID);
+      var file = folder.createFile(mediaBlob);
+      
+      // Force the correct name and mime type
+      file.setName(e.parameter.fileName);
+
+      // Log created file details
+      Logger.log('Created file:');
+      Logger.log('Name: ' + file.getName());
+      Logger.log('Type: ' + file.getMimeType());
+
+      var fileUrl = file.getUrl();
+      
+      // Update the media column
+      var mediaColumnIndex = headers.indexOf("media");
+      if (mediaColumnIndex > -1) {
+        newRow[mediaColumnIndex] = fileUrl;
+      } else {
+        newRow.push(fileUrl);
+      }
+    }
+
+    // Write the new row
+    sheet.getRange(nextRow, 1, 1, newRow.length).setValues([newRow]);
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ 
+        result: "success", 
+        row: nextRow,
+        debug: {
+          fileName: e.parameter.fileName,
+          mimeType: e.parameter.mimeType,
+          logs: Logger.getLog()
+        }
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+
+  } catch (error) {
+    return ContentService
+      .createTextOutput(JSON.stringify({ 
+        result: "error", 
+        error: error.message,
+        logs: Logger.getLog()
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+  } finally {
+    lock.releaseLock();
+  }
+}
