@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Application Form</title>
+    <title>Multiple  Form</title>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         * {
@@ -28,7 +28,7 @@
             border-radius: 8px;
             box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             width: 100%;
-            max-width: 500px;
+            max-width: 600px;
         }
 
         .form-title {
@@ -65,6 +65,29 @@
             box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
         }
 
+        .upload-mode {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .mode-option {
+            flex: 1;
+            padding: 0.5rem;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+        }
+
+        .mode-option.active {
+            border-color: #007bff;
+            background-color: #f0f8ff;
+            color: #007bff;
+        }
+
         .file-upload {
             position: relative;
             border: 2px dashed #ddd;
@@ -94,17 +117,57 @@
             font-size: 0.9rem;
         }
 
-        .file-name {
-            margin-top: 0.5rem;
-            font-size: 0.9rem;
-            color: #333;
-            font-weight: 500;
+        .files-list {
+            margin-top: 1rem;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
         }
 
         .file-info {
-            margin-top: 0.5rem;
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 0.25rem;
+        }
+
+        .file-details {
             font-size: 0.8rem;
             color: #666;
+        }
+
+        .remove-file {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 0.25rem 0.5rem;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .remove-file:hover {
+            background: #c82333;
+        }
+
+        .file-counter {
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #666;
+            text-align: center;
         }
 
         .submit-btn {
@@ -146,17 +209,28 @@
             transition: width 0.3s ease;
         }
 
+        .progress-text {
+            text-align: center;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
         @media (max-width: 600px) {
             .form-container {
                 padding: 1.5rem;
                 margin: 10px;
+            }
+            
+            .upload-mode {
+                flex-direction: column;
             }
         }
     </style>
 </head>
 <body>
     <div class="form-container">
-        <h2 class="form-title">Application Form</h2>
+        <h2 class="form-title">Multiple file Form</h2>
         
         <form id="submit-form">
             <div class="form-group">
@@ -165,19 +239,34 @@
             </div>
 
             <div class="form-group">
+                <label>Upload Mode</label>
+                <div class="upload-mode">
+                    <div class="mode-option active" data-mode="single">
+                        Single File Upload
+                    </div>
+                    <div class="mode-option" data-mode="multiple">
+                        Multiple Files Upload
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group">
                 <label>File Upload</label>
                 <div class="file-upload" id="fileUpload">
                     <input type="file" id="fileInput" name="media" required>
-                    <div class="file-upload-text">
-                        Click to select or drag and drop any file
-                        <br><small>Any file format supported (max 10MB)</small>
+                    <div class="file-upload-text" id="uploadText">
+                        Click to select or drag and drop files
+                        <br><small>Any file format supported (max 10MB per file)</small>
                     </div>
-                    <div class="file-name" id="fileName"></div>
-                    <div class="file-info" id="fileInfo"></div>
                 </div>
+                
+                <div class="files-list" id="filesList"></div>
+                <div class="file-counter" id="fileCounter"></div>
+                
                 <div class="progress-bar" id="progressBar">
                     <div class="progress-fill" id="progressFill"></div>
                 </div>
+                <div class="progress-text" id="progressText"></div>
             </div>
 
             <button type="submit" class="submit-btn" id="submitBtn">
@@ -187,16 +276,36 @@
     </div>
 
     <script>
-        const scriptURL = "https://script.google.com/macros/s/AKfycbwr4snYlMBFxyJAUL3bhOqF3CD4HgcRbqEWDuXH6QNQGwIyuQHBJpCEcgZXje9HU6jw/exec";
+        const scriptURL = "https://script.google.com/macros/s//exec";
         const form = document.getElementById('submit-form');
         const fileUpload = document.getElementById('fileUpload');
         const fileInput = document.getElementById('fileInput');
-        const fileName = document.getElementById('fileName');
-        const fileInfo = document.getElementById('fileInfo');
+        const filesList = document.getElementById('filesList');
+        const fileCounter = document.getElementById('fileCounter');
+        const uploadText = document.getElementById('uploadText');
         const progressBar = document.getElementById('progressBar');
         const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
         const submitBtn = document.getElementById('submitBtn');
-        const maxSizeMB = 10; // Increased to 10MB
+        const maxSizeMB = 10;
+        const maxFiles = 20; // Maximum number of files
+
+        let selectedFiles = [];
+        let uploadMode = 'single';
+
+        // Upload mode handling
+        document.querySelectorAll('.mode-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.mode-option').forEach(opt => opt.classList.remove('active'));
+                this.classList.add('active');
+                uploadMode = this.dataset.mode;
+                
+                fileInput.multiple = uploadMode === 'multiple';
+                selectedFiles = [];
+                updateFilesList();
+                updateUploadText();
+            });
+        });
 
         // File upload handling
         fileUpload.addEventListener('click', () => fileInput.click());
@@ -218,34 +327,109 @@
         function handleDrop(e) {
             e.preventDefault();
             fileUpload.classList.remove('dragging');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                handleFile(files[0]);
-            }
+            const files = Array.from(e.dataTransfer.files);
+            handleFiles(files);
         }
 
         function handleFileSelect(e) {
-            const file = e.target.files[0];
-            if (file) {
-                handleFile(file);
+            const files = Array.from(e.target.files);
+            handleFiles(files);
+        }
+
+        function handleFiles(files) {
+            if (uploadMode === 'single') {
+                if (files.length > 0) {
+                    selectedFiles = [files[0]];
+                }
+            } else {
+                // Multiple mode
+                for (let file of files) {
+                    if (selectedFiles.length >= maxFiles) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Too Many Files',
+                            text: `Maximum ${maxFiles} files allowed.`
+                        });
+                        break;
+                    }
+                    
+                    if (file.size > maxSizeMB * 1024 * 1024) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'File Too Large',
+                            text: `${file.name} is larger than ${maxSizeMB}MB.`
+                        });
+                        continue;
+                    }
+                    
+                    // Check if file already exists
+                    if (!selectedFiles.find(f => f.name === file.name && f.size === file.size)) {
+                        selectedFiles.push(file);
+                    }
+                }
+            }
+            
+            // Validate file sizes
+            selectedFiles = selectedFiles.filter(file => {
+                if (file.size > maxSizeMB * 1024 * 1024) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'File Too Large',
+                        text: `${file.name} is larger than ${maxSizeMB}MB and will be removed.`
+                    });
+                    return false;
+                }
+                return true;
+            });
+            
+            updateFilesList();
+        }
+
+        function updateFilesList() {
+            filesList.innerHTML = '';
+            
+            selectedFiles.forEach((file, index) => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                fileItem.innerHTML = `
+                    <div class="file-info">
+                        <div class="file-name">${file.name}</div>
+                        <div class="file-details">Type: ${file.type || 'Unknown'} | Size: ${formatFileSize(file.size)}</div>
+                    </div>
+                    <button type="button" class="remove-file" onclick="removeFile(${index})">Remove</button>
+                `;
+                filesList.appendChild(fileItem);
+            });
+            
+            updateFileCounter();
+        }
+
+        function updateFileCounter() {
+            if (selectedFiles.length === 0) {
+                fileCounter.textContent = '';
+            } else {
+                const totalSize = selectedFiles.reduce((sum, file) => sum + file.size, 0);
+                fileCounter.textContent = `${selectedFiles.length} file(s) selected | Total size: ${formatFileSize(totalSize)}`;
             }
         }
 
-        function handleFile(file) {
-            // Validate file size only (no type restrictions)
-            if (file.size > maxSizeMB * 1024 * 1024) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'File Too Large',
-                    text: `File size should be less than ${maxSizeMB}MB.`
-                });
-                return;
+        function updateUploadText() {
+            if (uploadMode === 'single') {
+                uploadText.innerHTML = `
+                    Click to select or drag and drop a file
+                    <br><small>Any file format supported (max ${maxSizeMB}MB)</small>
+                `;
+            } else {
+                uploadText.innerHTML = `
+                    Click to select or drag and drop multiple files
+                    <br><small>Any file format supported (max ${maxSizeMB}MB per file, ${maxFiles} files max)</small>
+                `;
             }
+        }
 
-            // Display file information
-            fileName.textContent = file.name;
-            fileInfo.textContent = `Type: ${file.type || 'Unknown'} | Size: ${formatFileSize(file.size)}`;
-            fileInput.files = createFileList(file);
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFilesList();
         }
 
         function formatFileSize(bytes) {
@@ -256,22 +440,25 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
 
-        function createFileList(file) {
-            const dt = new DataTransfer();
-            dt.items.add(file);
-            return dt.files;
-        }
-
         // Form submission
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
-            const file = fileInput.files[0];
-            if (!file) {
+            if (selectedFiles.length === 0) {
                 Swal.fire({
                     icon: 'error',
-                    title: 'No File Selected',
-                    text: 'Please select a file to upload.'
+                    title: 'No Files Selected',
+                    text: 'Please select at least one file to upload.'
+                });
+                return;
+            }
+
+            const name = document.getElementById('name').value.trim();
+            if (!name) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Name Required',
+                    text: 'Please enter your name.'
                 });
                 return;
             }
@@ -280,39 +467,41 @@
                 submitBtn.disabled = true;
                 submitBtn.textContent = 'Uploading...';
                 progressBar.style.display = 'block';
+                progressText.style.display = 'block';
 
-                // Simulate progress
-                let progress = 0;
-                const progressInterval = setInterval(() => {
-                    progress += Math.random() * 30;
-                    if (progress > 90) clearInterval(progressInterval);
-                    progressFill.style.width = Math.min(progress, 90) + '%';
-                }, 500);
+                // Prepare files data
+                const filesData = [];
+                for (let i = 0; i < selectedFiles.length; i++) {
+                    const file = selectedFiles[i];
+                    progressText.textContent = `Processing file ${i + 1} of ${selectedFiles.length}: ${file.name}`;
+                    
+                    const base64Data = await new Promise((resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () => resolve(reader.result.split(',')[1]);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                    });
 
-                // Convert file to base64
-                const base64Data = await new Promise((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () => resolve(reader.result.split(',')[1]);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                });
+                    filesData.push({
+                        name: file.name,
+                        type: file.type || 'application/octet-stream',
+                        size: file.size,
+                        data: base64Data
+                    });
 
-                // Prepare form data
-                const formData = new FormData(form);
-                const params = new URLSearchParams();
-                
-                for (let [key, value] of formData.entries()) {
-                    if (key !== 'media') {
-                        params.append(key, value);
-                    }
+                    // Update progress
+                    const progress = ((i + 1) / selectedFiles.length) * 90;
+                    progressFill.style.width = progress + '%';
                 }
-                
-                params.append('fileName', file.name);
-                params.append('mimeType', file.type || 'application/octet-stream'); // Default mime type for unknown files
-                params.append('fileSize', file.size);
-                params.append('media', base64Data);
 
-                // Submit form
+                progressText.textContent = 'Uploading files to server...';
+
+                // Submit to server
+                const params = new URLSearchParams();
+                params.append('name', name);
+                params.append('uploadMode', uploadMode);
+                params.append('filesData', JSON.stringify(filesData));
+
                 const response = await fetch(scriptURL, {
                     method: 'POST',
                     body: params,
@@ -322,20 +511,24 @@
                 });
 
                 const result = await response.json();
-
-                clearInterval(progressInterval);
                 progressFill.style.width = '100%';
 
                 if (result.result === "success") {
                     Swal.fire({
                         icon: 'success',
                         title: 'Success!',
-                        text: 'Your file has been uploaded successfully.'
+                        html: `
+                            <p>Your files have been uploaded successfully!</p>
+                            ${result.folderUrl ? `<p><a href="${result.folderUrl}" target="_blank">View uploaded files</a></p>` : ''}
+                        `
                     });
+                    
+                    // Reset form
                     form.reset();
-                    fileName.textContent = '';
-                    fileInfo.textContent = '';
+                    selectedFiles = [];
+                    updateFilesList();
                     progressBar.style.display = 'none';
+                    progressText.style.display = 'none';
                     progressFill.style.width = '0%';
                 } else {
                     throw new Error(result.error || "Upload failed");
@@ -345,13 +538,17 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Upload Failed',
-                    text: error.message || 'An error occurred while uploading your file.'
+                    text: error.message || 'An error occurred while uploading your files.'
                 });
             } finally {
                 submitBtn.disabled = false;
                 submitBtn.textContent = 'Submit Application';
+                progressText.textContent = '';
             }
         });
+
+        // Initialize
+        updateUploadText();
     </script>
 </body>
 </html>
