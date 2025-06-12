@@ -26,8 +26,8 @@ A smart file upload system using Google Apps Script that handles both single and
 3. Right-click the folder → **Share** → **Get link** 
 4. Copy the folder ID from the URL (the long string after `/folders/`)
    ```
-   Example URL: https://drive.google.com/drive/folders/1D7ZRa_TKdcuID2keYWvNwEDBgwNyz7wa
-   Folder ID: 1D7ZRa_TKdcuID2keYWvNwEDBgwNyz7wa
+   Example URL: https://drive.google.com/drive/folders/1D7ZRa_sdgsdgNwEDBgwNyz7wa
+   Folder ID: 1D7ZRa_sdgsdgNwEDBgwNyz7wa
    ```
 
 ### Step 2: Create Google Spreadsheet
